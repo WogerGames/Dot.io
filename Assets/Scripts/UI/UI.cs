@@ -1,0 +1,292 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine;
+using System;
+using Photon.Pun;
+
+public class UI : MonoBehaviour
+{
+    [SerializeField] Joystick joystick;
+    [SerializeField] Transform healthbarParent;
+    [SerializeField] ProgressBar progressBarPrefab;
+    [SerializeField] ProgressBar citadelHealthBarPrefab;
+    [SerializeField] ProgressBar towerHealthBarPrefab;
+    [SerializeField] ProgressBar perkProgressBar;
+    [SerializeField] RespawnTimerUI respawnTimer;
+    
+
+    [Space]
+
+    [SerializeField] PerkHandlerUI perkHandler;
+    [SerializeField] CompleteUI complete;
+
+    readonly Dictionary<Player, ProgressBar> playersHealthBars = new();
+    readonly Dictionary<HealthComponent, ProgressBar> healthBars = new();
+
+    public Action<Vector2> onJoystick;
+    public Action<PerkID> onPerkClick;
+
+    bool isSleep;
+
+    Player playerMine;
+
+    private void Awake()
+    {
+        isSleep = true;
+
+        complete.gameObject.SetActive(false);
+        respawnTimer.gameObject.SetActive(false);
+
+        EventsHolder.playerSpawnedMine.AddListener(PlayerMine_Spawned);
+        EventsHolder.playerSpawnedAny.AddListener(PlayerAny_Spawned);
+        EventsHolder.playerAnniged.AddListener(Player_Anniged);
+        EventsHolder.onVictory.AddListener(Victory);
+        EventsHolder.onDefeat.AddListener(Defeat);
+        EventsHolder.profileSeted.AddListener(Profile_Seted);
+
+        perkHandler.onPerkClick += Perk_Clicked;
+        respawnTimer.onTimerNotify += RespawnTimer;
+    }
+
+    private void RespawnTimer()
+    {
+        if (GameManager.Instance.complete)
+            return;
+
+        respawnTimer.gameObject.SetActive(false);
+        //joystick.enabled = true;
+        joystick.gameObject.SetActive(true);
+        joystick.Reset();
+
+        MultiplayerManager.RespawnPlayer();
+    }
+
+    private void Profile_Seted(AIProfile profile, Player player)
+    {
+        if (playersHealthBars.ContainsKey(player))
+        {
+            var bar = playersHealthBars[player];
+            (bar as PlayerHealthBar).nickname.text = profile.name;
+        }
+    }
+
+    private void Victory(Team team)
+    {
+        GameComplete(CompleteStatus.Victory);
+    }
+
+    private void Defeat(Team team)
+    {
+        GameComplete(CompleteStatus.Defeat);
+    }
+
+    private void GameComplete(CompleteStatus status)
+    {
+        if (!MultiplayerManager.IsMaster)
+            return;
+
+        joystick.gameObject.SetActive(false);
+        perkHandler.Clear();
+
+        LeanTween.delayedCall(1f, () =>
+        {
+            if (complete)
+            {
+                complete.gameObject.SetActive(true);
+                complete.Init(status, perkHandler.AllPerks);
+            }
+        });
+    }
+
+    private void Perk_Clicked(PerkID perkID)
+    {
+        ClosePerkPanel();
+
+        if (playerMine)
+        {
+            onPerkClick?.Invoke(perkID);
+        }
+        else
+        {
+            var mineRespawnData = GameManager.Instance.respawnQueue.Find
+            (
+                r =>
+                !r.isAI &&
+                int.Parse($"{r.viewID}".Substring(0, 1)) == PhotonNetwork.LocalPlayer.ActorNumber
+            );
+            mineRespawnData.usedPerks.Add(perkID);
+        }
+    }
+
+    private void Start()
+    {
+        var citadels = GameManager.Instance.citadels;
+        for (int i = 0; i < citadels.Length; i++)
+        {
+            var b = Instantiate(citadelHealthBarPrefab, healthbarParent);
+            healthBars.Add(citadels[i].Health, b);
+        }
+
+        var towers = GameManager.Instance.towers;
+        for (int i = 0; i < towers.Length; i++)
+        {
+            var b = Instantiate(towerHealthBarPrefab, healthbarParent);
+            healthBars.Add(towers[i].Health, b);
+        }
+
+
+    }
+
+    private void Player_Anniged(Player player)
+    {
+        if (playersHealthBars.ContainsKey(player))
+        {
+            var bar = playersHealthBars[player];
+            Destroy(bar.gameObject);
+            playersHealthBars.Remove(player);
+        }
+
+        if (player.GetComponent<BehaviourPlayer>() && player.IsMine() && !GameManager.Instance.complete)
+        {
+            //joystick.enabled = false;
+            joystick.gameObject.SetActive(false);
+            joystick.Reset();
+
+            respawnTimer.gameObject.SetActive(true);
+            respawnTimer.Init();
+        }
+    }
+
+    private void PlayerAny_Spawned(Player player)
+    {
+        var bar = Instantiate(progressBarPrefab, healthbarParent);
+        playersHealthBars.Add(player, bar);
+        (bar as PlayerHealthBar).nickname.text = player.Nickname;
+        //print("ץוכחבאנ סמחהאם");
+    }
+
+    private void PlayerMine_Spawned(Player player)
+    {
+        player.GetComponent<BehaviourPlayer>().SetUI(this);
+
+        playerMine = player;
+    }
+
+    private void Update()
+    {
+        if(joystick.Direction != Vector2.zero)
+        {
+            isSleep = false;
+            onJoystick?.Invoke(joystick.Direction);
+        }
+        else if(!isSleep)
+        {
+            isSleep = true;
+            onJoystick?.Invoke(joystick.Direction);
+        }
+
+        UpdateHealthBars();
+        UpdatePerkBar();
+    }
+
+    public void ShowPerkPanel(List<PerkID> usedPerks)
+    {
+        StartCoroutine(Delay());
+
+        IEnumerator Delay()
+        {
+            yield return new WaitForSeconds(1.1f);
+
+            var rect = perkProgressBar.GetComponent<RectTransform>();
+            LeanTween.value
+            (
+                gameObject,
+                y => 
+                { 
+                    rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y); 
+                },
+                0,
+                30,
+                0.3f
+            ).setEaseOutQuad();
+
+            perkHandler.Init(usedPerks);
+        }
+    }
+
+    public void ClosePerkPanel()
+    {
+        perkHandler.Clear();
+        var rect = perkProgressBar.GetComponent<RectTransform>();
+        LeanTween.value
+        (
+            gameObject,
+            y =>
+            {
+                rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
+            },
+            30,
+            0,
+            0.3f
+        ).setEaseOutQuad();
+    }
+
+    void UpdateHealthBars()
+    {
+        foreach (var item in playersHealthBars)
+        {
+            var bar = item.Value;
+            var player = item.Key;
+
+            // HOT FIX
+            if (!player)
+            {
+                if (bar)
+                {
+                    Destroy(bar.gameObject);
+                }
+                continue;
+            }
+
+            var screenPos = Camera.main.WorldToScreenPoint(player.transform.position);
+
+            int yOffset = Screen.height / 11;
+            bar.transform.position = screenPos - new Vector3(0, yOffset, 0);
+            bar.value = (float)player.Health.Value / (float)player.Health.MaxValue;
+
+            
+        }
+
+
+        foreach (var item in healthBars)
+        {
+            var bar = item.Value;
+            var health = item.Key;
+
+            // HOT FIX
+            if (!health)
+            {
+                if (bar)
+                    Destroy(bar.gameObject);
+                continue;
+            }
+
+            var screenPos = Camera.main.WorldToScreenPoint(health.transform.position);
+
+            bar.transform.position = screenPos - new Vector3(0, 70, 0);
+            bar.value = (float)health.Value / (float)health.MaxValue;
+        }
+    }
+
+    void UpdatePerkBar()
+    {
+        if (!playerMine)
+            return;
+
+        var curProgress = playerMine.PerkProgress.Evaluate(playerMine.usedPerks.Count);
+
+        perkProgressBar.value = playerMine.Score / curProgress;
+        
+    }
+}

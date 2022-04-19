@@ -40,6 +40,13 @@ public static class MultiplayerExtensions
         }
     }
 
+    /// <summary>
+    /// позволяет вызвать сетевое событие у НЕ MINE фотон вьюва
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="photonView"></param>
+    /// <param name="eventCode"></param>
+    /// <param name="data"></param>
     public static void RaiseEventAll<T>(this PhotonView photonView, EventCode eventCode, T data)
     {
         if (photonView.Owner != null)

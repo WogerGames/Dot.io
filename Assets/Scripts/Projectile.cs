@@ -20,11 +20,8 @@ public class Projectile : MonoBehaviourPun
     int dmg;
     ProjectileData projectileData;
 
-    public void Init(ProjectileData data, bool yFix = true)
+    public void Init(ProjectileData data)
     {
-        if (yFix)
-            data.direction.y = 0;
-
         prevPoint = transform.position;
         curPoint = transform.position;
 
@@ -38,12 +35,12 @@ public class Projectile : MonoBehaviourPun
 
     private void Update()
     {
-        transform.position += speed * Time.deltaTime * moveDir;
-
-        lofetime += Time.deltaTime;
-
         if (photonView.IsMine)
         {
+            transform.position += speed * Time.deltaTime * moveDir;
+
+            lofetime += Time.deltaTime;
+
             if (lofetime > 1.5f)
             {
                 PhotonNetwork.Destroy(GetComponent<PhotonView>());
@@ -71,18 +68,15 @@ public class Projectile : MonoBehaviourPun
 
         }).ToArray();
 
-        if (hits.Length > 0)
+        foreach (var hit in hits)
         {
-            foreach (var hit in hits)
-            {
-                CalculateDamage();
+            CalculateDamage();
 
-                var h = hit.collider.transform.root.GetComponent<HealthComponent>();
-                h.Damage(dmg, OwnerId);
-                break;
-            }
+            var health = hit.collider.transform.root.GetComponent<HealthComponent>();
+            health.Damage(dmg, OwnerId);
 
             PhotonNetwork.Destroy(GetComponent<PhotonView>());
+            break;
         }
 
         prevPoint = curPoint;
@@ -91,7 +85,7 @@ public class Projectile : MonoBehaviourPun
 
     void CalculateDamage()
     {
-        int critChance = projectileData.critChance;
+        int critChance = projectileData?.critChance ?? 5;// HOT FIX при стопе игры
         if (Random.Range(0, 100) < critChance)
         {
             dmg *= 2;

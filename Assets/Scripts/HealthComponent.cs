@@ -7,7 +7,7 @@ using Random = UnityEngine.Random;
 public class HealthComponent : MonoBehaviour
 {
     public int MaxValue = 100;
-
+    [field: SerializeField]
     public int Value { get; private set; }
     public bool IsAlive { get; set; }
     [field: SerializeField]
@@ -17,11 +17,11 @@ public class HealthComponent : MonoBehaviour
     public int OwnerID { get; set; }
 
     public Action<int> onAnniged;
+    public Action<int> onIncreaseHealth;
     public Action<int, int> onDamage;
     public Action<Team> onTeamSet;
 
     [field: SerializeField]
-
     Team team;
     public Team Team 
     {
@@ -34,6 +34,7 @@ public class HealthComponent : MonoBehaviour
     }
 
     public int LastDamagedOwnerID { get; set; }
+    public int AnnigedTime { get; set; }
 
     private void Start()
     {
@@ -42,9 +43,9 @@ public class HealthComponent : MonoBehaviour
         Value = MaxValue;
     }
 
-    public void Damage(int value, int ownerID, bool silentMode = false)
+    public void Damage(int value, int ownerID)
     {
-        if (!silentMode && Random.Range(0, 100) < Evasion)
+        if (Random.Range(0, 100) < Evasion)
             return;
 
         value -= Armor;
@@ -52,9 +53,28 @@ public class HealthComponent : MonoBehaviour
 
         LastDamagedOwnerID = ownerID;
 
-        if (!silentMode)
+        onDamage?.Invoke(value, ownerID);        
+    }
+
+    public void DamageNetworkReceived(int value, int ownerID, int damageTime)
+    {
+        Value -= value;
+        LastDamagedOwnerID = ownerID;
+    }
+
+    public void IncreaseMaxHealth(int value, bool networkMode = false)
+    {
+        MaxValue += value;
+        Value += value;
+        Value = Mathf.Clamp(Value, 0, MaxValue);
+    }
+
+    public void DecreaseMaxHealth(int value)
+    {
+        MaxValue -= value;
+        if (Value > MaxValue)
         {
-            onDamage?.Invoke(value, ownerID);
+            Value = MaxValue;
         }
     }
 
@@ -69,11 +89,25 @@ public class HealthComponent : MonoBehaviour
 
     private void Update()
     {
-        if(IsAlive && Value <= 0)
+        if (IsAlive && Value <= 0)
         {
             IsAlive = false;
 
-            onAnniged?.Invoke(LastDamagedOwnerID);
+            AnnigedTime = MultiplayerManager.ServerTime;
+
+
+            StartCoroutine(WaitClientAnnigedData());
+
+            IEnumerator WaitClientAnnigedData()
+            {
+                // В сетевом представлении этого класса есть метод
+                // который получает инфу об аннигиляции и сравненивает
+                // серверное время этого события
+                yield return new WaitForSeconds(0.3f);
+
+                onAnniged?.Invoke(LastDamagedOwnerID);
+            }
+
         }
     }
 }

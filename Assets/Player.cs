@@ -14,6 +14,7 @@ public class Player : MonoBehaviourPun
     [SerializeField] Projectile projectilePrefab;
     [SerializeField] HealthComponent health;
     [SerializeField] TMPro.TMP_Text testo;
+    [SerializeField] ParticleSystem runeEffect;
 
     [Space]
 
@@ -21,6 +22,7 @@ public class Player : MonoBehaviourPun
     [SerializeField] Material friendly;
     [SerializeField] Material enemy;
 
+    [field: SerializeField]
     public string Nickname { get; set; }
 
     public Action<List<PerkID>> onPerkAvailable;
@@ -31,6 +33,7 @@ public class Player : MonoBehaviourPun
     public int Score { get; set; }
     [field: SerializeField]
     public int CountAnniges { get; set; }
+    [field: SerializeField]
     public int CountAnniged { get; set; }
     public float DistanceToAttack => distToAtttack;
     public HealthComponent Health => health;
@@ -43,10 +46,16 @@ public class Player : MonoBehaviourPun
     HealthComponent target;
     float currentRate;
     float findTargetTimer;
+    float baseFireRate;
     bool annigedNotifed;
+    bool isRuneUsed;
     
     private void Start()
     {
+        runeEffect.Stop();
+
+        baseFireRate = rateOfFire;
+        
         EventsHolder.playerSpawnedAny?.Invoke(this);
 
         name += photonView.ViewID;
@@ -107,11 +116,14 @@ public class Player : MonoBehaviourPun
                 baseDamage += 5;
                 break;
             case PerkID.Health:
-                Health.MaxValue += 50;
-                Health.Damage(-50, photonView.ViewID);
+                Health.IncreaseMaxHealth(50);
                 break;
             case PerkID.FireRate:
-                rateOfFire -= 0.08f;
+                if (!isRuneUsed)
+                {
+                    rateOfFire -= 0.08f;
+                    rateOfFire = Mathf.Clamp(rateOfFire, 0.03f, 1f);
+                }
                 break;
             case PerkID.Evasion:
                 Health.Evasion += 30;
@@ -134,7 +146,39 @@ public class Player : MonoBehaviourPun
         if (!silentMode)
             onPerkPick?.Invoke(perk);
 
-        print($"ща будем жарить {perk}");
+        //print($"ща будем жарить {perk}");
+    }
+
+    public void TakeRune()
+    {
+        rateOfFire = 0.087f;
+        baseDamage += 5;
+        speed += 3f;
+        distToAtttack += 3f;
+        health.IncreaseMaxHealth(1300);
+
+        runeEffect.Play();
+
+        isRuneUsed = true;
+    }
+
+    public void RuneEnded()
+    {
+        rateOfFire = baseFireRate;
+        foreach (var ratePerk in usedPerks.FindAll(p => p == PerkID.FireRate))
+        {
+            rateOfFire -= 0.08f;
+        } 
+
+        rateOfFire = Mathf.Clamp(rateOfFire, 0.03f, 1f);
+        baseDamage -= 5;
+        speed -= 3f;
+        distToAtttack -= 3f;
+        health.DecreaseMaxHealth(1300);
+
+        runeEffect.Stop();
+
+        isRuneUsed = false;
     }
 
     private void Anniged(int annigilatorID)
@@ -159,6 +203,9 @@ public class Player : MonoBehaviourPun
         currentRate += Time.deltaTime;
         findTargetTimer += Time.deltaTime;
 
+        var rot = testo.transform.rotation.eulerAngles;
+        testo.transform.rotation = Quaternion.Euler(rot.x, 0, rot.z);
+
         CheckNearestTarget();
 
         if (photonView.IsMine)
@@ -169,15 +216,24 @@ public class Player : MonoBehaviourPun
             }
         }
 
-        if(testo)
-        testo.text = CritChance.ToString();
+        if(usedPerks.Count > 0)
+        {
+            testo.text = usedPerks.Count.ToString();
+        }
+        else
+        {
+            testo.text = string.Empty;
+        }
+
+        
     }
+        
 
     public void Fire()
     {
-        if (target && currentRate > rateOfFire)
+        if (target && currentRate > rateOfFire && !GameManager.Instance.complete)
         {
-            var dir = (target.transform.position - transform.position).normalized;
+            var dir = (target.transform.position - (transform.position)).normalized;
             var pos = transform.position - new Vector3(0, 0.75f, 0);
             var go = PhotonNetwork.Instantiate(projectilePrefab.name, pos, Quaternion.identity);
 
@@ -248,7 +304,8 @@ public class Player : MonoBehaviourPun
 
     private void OnDestroy()
     {
-        if (!photonView.IsMine && !annigedNotifed)
+        //print("«аху€рили, суки.. " + Nickname);
+        if (!photonView.IsMine && !annigedNotifed && Time.time > 7)
         {
             EventsHolder.playerAnniged?.Invoke(this);
         }

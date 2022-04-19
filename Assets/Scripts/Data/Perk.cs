@@ -7,9 +7,14 @@ public class Perk : ScriptableObject
 {
     public PerkID id;
     public Sprite icon;
-    [TextArea]
-    public string description;
+
     public int countStack;
+
+    [TextArea]
+    public string descriptionEng;
+    [TextArea]
+    public string descriptionRus;
+
 
     private void OnEnable()
     {

@@ -19,33 +19,57 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     [SerializeField] Button btnConnect;
     [SerializeField] TMP_InputField inputField;
 
+    [Space]
+
+    [SerializeField] TMP_Text btnLabel;
+
     ExitGames.Client.Photon.Hashtable roomProps;
 
     public System.Action<string> onPhotonConnection;
 
     void Awake()
     {
+        if (PlayerPrefs.HasKey("nick"))
+        {
+            PhotonNetwork.NickName = PlayerPrefs.GetString("nick");
+        }
+
         // Первоначальные настройки клиента, тупо спизжено из тутора
         if (PhotonNetwork.NickName == string.Empty)
         {
-            //PhotonNetwork.NickName = "Пидор_" + Random.Range(100, 999);
-            PhotonNetwork.NickName = "Woger";
+            if (Language.Rus)
+                PhotonNetwork.NickName = "Игрок " + Random.Range(100, 999);
+            else
+                PhotonNetwork.NickName = "Player " + Random.Range(100, 999);
         }
-        //PhotonNetwork.AuthValues = new AuthenticationValues(PhotonNetwork.NickName);
-        PhotonNetwork.AutomaticallySyncScene = true;
-        PhotonNetwork.GameVersion = "1";
-
-        PhotonNetwork.SerializationRate = 30;
-        PhotonNetwork.SendRate = 60;
-
-        PhotonNetwork.ConnectUsingSettings();
-        // ________________________________________________________
-        roomProps = new ExitGames.Client.Photon.Hashtable();
-        
-        roomProps["idi_naxyi"] = PhotonNetwork.GameVersion;
 
         btnConnect.onClick.AddListener(JoinRoom);
 
+        //PhotonNetwork.AuthValues = new AuthenticationValues(PhotonNetwork.NickName);
+        if (!PhotonNetwork.IsConnected)
+        {
+            PhotonNetwork.AutomaticallySyncScene = true;
+            PhotonNetwork.GameVersion = "1";
+
+            PhotonNetwork.SerializationRate = 30;
+            PhotonNetwork.SendRate = 60;
+
+            PhotonNetwork.ConnectUsingSettings();
+            // ________________________________________________________
+            roomProps = new ExitGames.Client.Photon.Hashtable();
+
+            roomProps["idi_naxyi"] = PhotonNetwork.GameVersion;
+
+            
+            btnConnect.gameObject.SetActive(false);
+        }
+        else
+        {
+            //OnApplicationPause(false);
+            btnConnect.gameObject.SetActive(true);
+        }
+
+        PhotonNetwork.KeepAliveInBackground = 180;
     }
 
     public static string GetNickname()
@@ -53,12 +77,16 @@ public class LobbyManager : MonoBehaviourPunCallbacks
         return PhotonNetwork.NickName;
     }
 
+    public static void SetNick(string value)
+    {
+        PhotonNetwork.NickName = value;
+    }
+
     public override void OnConnectedToMaster()
     {
-        if (PhotonNetwork.CountOfPlayers > 1)
-            PhotonNetwork.NickName = "Pisko";
         Log("Некий хуежуй: " + PhotonNetwork.NickName + " присоеденился к пиздатой игруле");
         onPhotonConnection?.Invoke(PhotonNetwork.NickName);
+        btnConnect.gameObject.SetActive(true);
     }
 
     public override void OnConnected()
@@ -84,8 +112,11 @@ public class LobbyManager : MonoBehaviourPunCallbacks
 
     public void JoinRoom()
     {
+        btnLabel.text = Language.Rus ? "Поиск игры.." : "Game searching..";
+
         print(PhotonNetwork.CountOfRooms);
         print(PhotonNetwork.CurrentRoom);
+        
         PhotonNetwork.JoinRandomRoom();
         //PhotonNetwork.JoinRandomRoom(roomProps, maxPlayers);
     }
@@ -99,20 +130,62 @@ public class LobbyManager : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         print("Припиздяшил, Уебок " + PhotonNetwork.NickName);
-        
-        PhotonNetwork.LoadLevel(sceneNameToload);
+
+        float waitTime = 0;
+
+        StartCoroutine(PlayersWaiting());
+
+        IEnumerator PlayersWaiting()
+        {
+            while(waitTime < 3)
+            {
+                yield return null;
+
+                waitTime += Time.deltaTime;
+
+                if (waitTime % 1.1f > 0.55f)
+                    btnLabel.text = Language.Rus ? "Поиск игры.." : "Game searching..";
+                else
+                    btnLabel.text = Language.Rus ? "Поиск игры." : "Game searching.";
+
+
+                if (PhotonNetwork.CurrentRoom.PlayerCount > 1)
+                {
+                    break;
+                    //PhotonNetwork.LoadLevel(sceneNameToload);
+                }
+            }
+
+            
+            PhotonNetwork.LoadLevel(sceneNameToload);
+        }
     }
 
-    public void OnChangedMaxPlayers()
+    private void OnApplicationPause(bool pause)
     {
-        //if (inputField.text.Length > 0)
-        //{
-        //    maxPlayers = byte.Parse(inputField.text);
-        //}
+        if (!pause)
+        {
+            StartCoroutine(Connect());
+        }
+
+        IEnumerator Connect()
+        {
+            yield return new WaitForSeconds(0.3f);
+
+            PhotonNetwork.ConnectUsingSettings();
+        }
     }
 
-    
 
+    private void Update()
+    {
+//#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            PlayerPrefs.DeleteAll();
+        }
+//#endif
+    }
     void Log(string msg)
     {
         logText.text += "\n";

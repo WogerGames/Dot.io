@@ -39,7 +39,7 @@ public class Tower : MonoBehaviourPun
             timerRefrashTarget = 0;
         }
 
-        if (target && currentRate > 0.7f)
+        if (target && currentRate > 0.7f && !GameManager.Instance.complete)
         {
             Fire();
             currentRate = 0;
@@ -64,7 +64,7 @@ public class Tower : MonoBehaviourPun
             ownerID = photonView.ViewID,
             team = Health.Team
         };
-        p.Init(projectileData, false);
+        p.Init(projectileData);
     }
 
     void UpdateTarget()

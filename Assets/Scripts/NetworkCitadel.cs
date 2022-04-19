@@ -19,7 +19,7 @@ public class NetworkCitadel : MonoBehaviourPun
 
     private void OnDestroy()
     {
-        if (!PhotonNetwork.IsMasterClient)
+        if (!PhotonNetwork.IsMasterClient && Time.time > 7)
         {
             citadel.Health.Annigilaion();
         }

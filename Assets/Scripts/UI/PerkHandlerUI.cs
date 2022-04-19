@@ -51,7 +51,8 @@ public class PerkHandlerUI : MonoBehaviour
         foreach (var item in perks)
         {
             var p = Instantiate(perkPrefab, parent);
-            p.Init(item, item.description);
+            var description = Language.Rus ? item.descriptionRus : item.descriptionEng;
+            p.Init(item, description);
             p.onClick += Perk_Clicked;
         }
 

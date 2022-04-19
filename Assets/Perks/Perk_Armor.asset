@@ -14,5 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 7
   icon: {fileID: 21300000, guid: 0b9dd346159dfb34287e002efc77805d, type: 3}
-  description: "\u0411\u043B\u043E\u043A\u0438\u0440\u0443\u0435\u0442 3 \u0443\u0440\u043E\u043D\u0430"
   countStack: 0
+  descriptionEng: Blocks part of the damage
+  descriptionRus: "\u0411\u043B\u043E\u043A\u0438\u0440\u0443\u0435\u0442 \u0447\u0430\u0441\u0442\u044C
+    \u0443\u0440\u043E\u043D\u0430"

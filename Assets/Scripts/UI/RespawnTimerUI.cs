@@ -19,7 +19,7 @@ public class RespawnTimerUI : MonoBehaviour
 
     private void Update()
     {
-        if(value <= 0)
+        if(value <= 0 && !GameManager.Instance.complete)
         {
             onTimerNotify?.Invoke();
         }

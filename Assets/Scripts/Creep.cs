@@ -74,9 +74,9 @@ public class Creep : MonoBehaviourPun
 
     void Fire()
     {
-        if (target && currentRate > rateOfFire)
+        if (target && currentRate > rateOfFire && !GameManager.Instance.complete)
         {
-            var dir = (target.transform.position - transform.position).normalized;
+            var dir = ((target.transform.position) - transform.position).normalized;
             var pos = transform.position - new Vector3(0, 0.9f, 0);
             var p = MultiplayerManager.Spawn(projectilePrefab, pos);
             var projectileData = new ProjectileData

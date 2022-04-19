@@ -87,7 +87,7 @@ public class NetworkPlayer : MonoBehaviourPunCallbacks
         if(ViewID == data.viewID)
         {
             player.PickPerk((PerkID)data.value, true);
-            print("ѕерк выбран где-то там");
+            //print("ѕерк выбран где-то там");
         }
     }
 

@@ -42,8 +42,10 @@ public class BehaviourPlayer : MonoBehaviour
     private void Joystick_Raised(Vector2 value)
     {
         move = value;
-        //player.Move(value);
-        agent.SetDestination(transform.position + (new Vector3(value.x, 0, value.y) * 1));
+        //move.Normalize();
+       
+        //agent.SetDestination(transform.position + (new Vector3(move.x, 0, move.y) * 1));
+        //agent.Move(new Vector3(move.x, 0, move.y) * Time.deltaTime * agent.speed);
 
         isFire = value == Vector2.zero;
     }
@@ -87,15 +89,16 @@ public class BehaviourPlayer : MonoBehaviour
             }
 
             move.Normalize();
-
-            agent.SetDestination(transform.position + (new Vector3(move.x, 0, move.y) * 1));
+            
+            //agent.SetDestination(transform.position + (new Vector3(move.x, 0, move.y) * 1));
+            agent.Move(agent.speed * Time.deltaTime * new Vector3(move.x, 0, move.y));
 
             isFire = move == Vector2.zero;
-        }
 
-        if (isFire)
-        {
-            player.Fire();
+            if (isFire)
+            {
+                player.Fire();
+            }
         }
     }
 
@@ -103,8 +106,8 @@ public class BehaviourPlayer : MonoBehaviour
     {
         if (ui)
         {
-            this.ui.onJoystick -= Joystick_Raised;
-            this.ui.onPerkClick -= Perk_Clicked;
+            ui.onJoystick  -= Joystick_Raised;
+            ui.onPerkClick -= Perk_Clicked;
         }
     }
 }

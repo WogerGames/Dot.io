@@ -4,17 +4,22 @@ using UnityEngine.UI;
 using UnityEngine;
 using System;
 using Photon.Pun;
+using TMPro;
+using static Settings;
 
 public class UI : MonoBehaviour
 {
     [SerializeField] Joystick joystick;
+    [SerializeField] Button btnCam;
     [SerializeField] Transform healthbarParent;
     [SerializeField] ProgressBar progressBarPrefab;
     [SerializeField] ProgressBar citadelHealthBarPrefab;
     [SerializeField] ProgressBar towerHealthBarPrefab;
     [SerializeField] ProgressBar perkProgressBar;
     [SerializeField] RespawnTimerUI respawnTimer;
-    
+    [SerializeField] GameObject infoRuneSpawned;
+    [SerializeField] GameObject runeEffect;
+    [SerializeField] TMP_Text runeTimeLeft;
 
     [Space]
 
@@ -30,6 +35,8 @@ public class UI : MonoBehaviour
     bool isSleep;
 
     Player playerMine;
+    // HOT FIX
+    CompleteStatus status;
 
     private void Awake()
     {
@@ -37,6 +44,8 @@ public class UI : MonoBehaviour
 
         complete.gameObject.SetActive(false);
         respawnTimer.gameObject.SetActive(false);
+        infoRuneSpawned.SetActive(false);
+        runeEffect.SetActive(false);
 
         EventsHolder.playerSpawnedMine.AddListener(PlayerMine_Spawned);
         EventsHolder.playerSpawnedAny.AddListener(PlayerAny_Spawned);
@@ -44,9 +53,30 @@ public class UI : MonoBehaviour
         EventsHolder.onVictory.AddListener(Victory);
         EventsHolder.onDefeat.AddListener(Defeat);
         EventsHolder.profileSeted.AddListener(Profile_Seted);
+        EventsHolder.runeSpawned.AddListener(Rune_Spawned);
+        EventsHolder.runeTaked.AddListener(Rune_Taked);
+        EventsHolder.runeEnded.AddListener(Rune_Ended);
+
+        btnCam.onClick.AddListener(Cam_Clicked);
 
         perkHandler.onPerkClick += Perk_Clicked;
         respawnTimer.onTimerNotify += RespawnTimer;
+
+        if (MultiplayerManager.IsMaster)
+            EventsHolder.clientCompleteDataReceived.AddListener(ClientData_Received);
+    }
+
+
+    private void ClientData_Received()
+    {
+        LeanTween.delayedCall(1f, () =>
+        {
+            if (complete)
+            {
+                complete.gameObject.SetActive(true);
+                complete.Init(status, perkHandler.AllPerks);
+            }
+        });
     }
 
     private void RespawnTimer()
@@ -86,17 +116,34 @@ public class UI : MonoBehaviour
         if (!MultiplayerManager.IsMaster)
             return;
 
+        this.status = status;
+
+        respawnTimer.gameObject.SetActive(false);
         joystick.gameObject.SetActive(false);
         perkHandler.Clear();
 
-        LeanTween.delayedCall(1f, () =>
+        if (PhotonNetwork.CurrentRoom.Players.Count - 1 == 0)
         {
-            if (complete)
+            LeanTween.delayedCall(1f, () =>
             {
-                complete.gameObject.SetActive(true);
-                complete.Init(status, perkHandler.AllPerks);
-            }
-        });
+                if (complete)
+                {
+                    complete.gameObject.SetActive(true);
+                    complete.Init(status, perkHandler.AllPerks);
+                }
+            });
+        }
+    }
+
+    public void NetworkGameComplete(CompleteStatus status)
+    {
+        respawnTimer.gameObject.SetActive(false);
+        joystick.gameObject.SetActive(false);
+        perkHandler.Clear();
+
+        complete.gameObject.SetActive(true);
+        complete.Init(status, perkHandler.AllPerks);
+            
     }
 
     private void Perk_Clicked(PerkID perkID)
@@ -173,6 +220,26 @@ public class UI : MonoBehaviour
         playerMine = player;
     }
 
+    private void Rune_Spawned(Rune rune)
+    {
+        infoRuneSpawned.SetActive(true);
+    }
+
+    private void Rune_Taked(Player player)
+    {
+        infoRuneSpawned.SetActive(false);
+
+        if (player.Nickname == PhotonNetwork.NickName)
+        {
+            runeEffect.SetActive(true);
+        }
+    }
+
+    private void Rune_Ended(Player player)
+    {
+        runeEffect.SetActive(false);
+    }
+
     private void Update()
     {
         if(joystick.Direction != Vector2.zero)
@@ -188,6 +255,11 @@ public class UI : MonoBehaviour
 
         UpdateHealthBars();
         UpdatePerkBar();
+
+        if (GameManager.Instance.Rune)
+        {
+            runeTimeLeft.text = $"{RUNE_DURATION - GameManager.Instance.Rune.currentDuration:F0}";
+        }
     }
 
     public void ShowPerkPanel(List<PerkID> usedPerks)
@@ -287,6 +359,10 @@ public class UI : MonoBehaviour
         var curProgress = playerMine.PerkProgress.Evaluate(playerMine.usedPerks.Count);
 
         perkProgressBar.value = playerMine.Score / curProgress;
-        
+    }
+
+    private void Cam_Clicked()
+    {
+        EventsHolder.onCamClicked?.Invoke();
     }
 }

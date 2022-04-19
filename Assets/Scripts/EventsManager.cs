@@ -79,9 +79,9 @@ public class EventsHolder
 
     ////-----------------------------------------------------------------------
 
-    //public class NetworkProjectileInited : UnityEvent<Projectile> { }
+    public class ClientGameCompleted : UnityEvent { }
 
-    //public static NetworkProjectileInited networkProjectileInited = new NetworkProjectileInited();
+    public static ClientGameCompleted clientGameCompleted = new();
 
     ////-----------------------------------------------------------------------
 
@@ -102,5 +102,36 @@ public class EventsHolder
     public static OnDefeat onDefeat = new();
 
     //-----------------------------------------------------------------------
+
+    public class ClientGameCompleteDataReceived : UnityEvent { }
+
+    public static ClientGameCompleteDataReceived clientCompleteDataReceived = new();
+
+    ////-----------------------------------------------------------------------
+
+    
+    public class CamClicked : UnityEvent { }
+
+    public static CamClicked onCamClicked = new();
+
+    ////-----------------------------------------------------------------------
+
+    public class RuneSpawned : UnityEvent<Rune> { }
+
+    public static RuneSpawned runeSpawned = new();
+
+    ////-----------------------------------------------------------------------
+    
+    public class RuneTaked : UnityEvent<Player> { }
+
+    public static RuneTaked runeTaked = new();
+
+    ////-----------------------------------------------------------------------
+
+    public class RuneEnded : UnityEvent<Player> { }
+
+    public static RuneEnded runeEnded = new();
+
+    ////-----------------------------------------------------------------------
 
 }

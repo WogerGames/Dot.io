@@ -6,6 +6,9 @@ public static class Settings
 {
     public const int MAX_PLAYERS = 10;
     public const int MAX_PERKS = 5;
+    public const int MIN_RUNE_SPAWN_DELAY = 100;
+    public const int MAX_RUNE_SPAWN_DELAY = 170;
+    public const int RUNE_DURATION = 30;
 
     public static List<AIProfile> aiProfiles = new()
     {
@@ -22,5 +25,20 @@ public static class Settings
         new() { name = "Светильник" },
         new() { name = "Mandalorian" },
         new() { name = "Сумчатый" },
+        new() { name = "Spotted lynx" },
+        new() { name = "Рысь Пятнистая" },
+        new() { name = "Ем Зубную пасту" },
+        new() { name = "plunger" },
+        new() { name = "-=O_o=-" },
+        new() { name = "Восэм хромосом" },
+        new() { name = "Toilet bowl - my friend" },
+        new() { name = "Дружу с мхом" },
+        new() { name = "Есть хочу" },
+        new() { name = "Вовка топ" },
+        new() { name = "Wash your foot" },
+        new() { name = "Don't eat the elbow" },
+        new() { name = "Skillet" },
+        new() { name = "Great Slime" },
+
     };
 }

@@ -12,13 +12,16 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] MultiplayerManager multiplayer;
     [SerializeField] Creep creepPrefab;
+    [SerializeField] Rune runePrefab;
     [SerializeField] public Transform[] spawnPoints;
     [SerializeField] public Transform[] spawnCreepPoints;
+    [SerializeField] public Transform[] runePoints;
     [SerializeField] public Citadel[] citadels;
     [SerializeField] public Tower[] towers;
 
     public static GameManager Instance { get; private set; }
 
+    public Rune Rune { get; private set; }
     
     public List<Player> allPlayers = new();
     public List<Creep> allCreeps = new();
@@ -33,7 +36,7 @@ public class GameManager : MonoBehaviour
         set
         {
             tima = value;
-            print("ёба хуёба");
+            //print("ёба хуёба");
         } 
     }
 
@@ -48,6 +51,8 @@ public class GameManager : MonoBehaviour
         EventsHolder.creepSpawned.AddListener(Creep_Spawned);
         EventsHolder.creepAnniged.AddListener(Creep_Anniged);
         EventsHolder.mineTeamPicked.AddListener(MineTeam_Picked);
+        EventsHolder.runeSpawned.AddListener(Rune_Spawned);
+        EventsHolder.runeEnded.AddListener(Rune_Ended);
 
         towers.ToList().ForEach(t => t.Health.onAnniged += Tower_Anniged);
         citadels.ToList().ForEach(t => t.Health.onAnniged += Citadel_Anniged);
@@ -56,16 +61,21 @@ public class GameManager : MonoBehaviour
     private void Citadel_Anniged(int timaAnnigerID)
     {
         complete = true;
+        print("Цитаделько наебнулась");
+        allPlayers.RemoveAll(p => !p);
 
         if (!MultiplayerManager.IsMaster)
+        {
+            EventsHolder.clientGameCompleted?.Invoke();
             return;
+        }
 
         // Hot Fix
         StartCoroutine(Delay());
 
         IEnumerator Delay()
         {
-            yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.3f);
 
             var citadel = citadels.ToList().Find(c => c);
 
@@ -89,11 +99,12 @@ public class GameManager : MonoBehaviour
     {
         StartCoroutine(CreepSpawner());
         StartCoroutine(CheckRespawnQueue());
+        StartCoroutine(SpawnRune());
     }
 
     private IEnumerator CheckRespawnQueue()
     {
-        while (true && MultiplayerManager.IsMaster)
+        while (true && MultiplayerManager.IsMaster && !complete)
         {
             yield return new WaitForSeconds(0.7f);
 
@@ -154,36 +165,47 @@ public class GameManager : MonoBehaviour
 
     private void Player_Anniged(Player player)
     {
-        allPlayers.Remove(player);
+        StartCoroutine(Delay());
 
-        RespawnData respawn = new()
+        IEnumerator Delay()
         {
-            name = player.Nickname,
-            isAI = player.GetComponent<BehaviourAI>(),
-            viewID = player.GetComponent<NetworkPlayer>().ViewID,
-            team = player.Health.Team,
-            score = player.Score,
-            countAnniges = player.CountAnniges,
-            countAnniged = player.CountAnniged,
-            usedPerks = player.usedPerks,
+            RespawnData respawn = new()
+            {
+                name = player.Nickname,
+                isAI = player.GetComponent<BehaviourAI>(),
+                viewID = player.GetComponent<NetworkPlayer>().ViewID,
+                team = player.Health.Team,
+                score = player.Score,
+                countAnniges = player.CountAnniges,
+                countAnniged = player.CountAnniged,
+                usedPerks = player.usedPerks,
 
-            timeAnniged = Time.time,
-        };
+                timeAnniged = Time.time,
+            };
 
-        bool isMaster = MultiplayerManager.IsMaster;
-        bool isMine = !respawn.isAI && player.GetComponent<NetworkPlayer>().IsMine();
+            
+            print("Ремувим <color=#83C12B>" + player.Nickname + "</color> " + player.Health.Value);
+            //allPlayers.Remove(player);
 
-        if (isMaster || isMine)
-        {
-            respawnQueue.Add(respawn);
+            bool isMaster = MultiplayerManager.IsMaster;
+            bool isMine = !respawn.isAI && player.GetComponent<NetworkPlayer>().IsMine();
+
+            if (isMaster || isMine)
+            {
+                respawnQueue.Add(respawn);
+            }
+
+            yield return null;
+
+            allPlayers.RemoveAll(p => !p);
         }
-        
     }
 
     private void PlayerAny_Spawned(Player player)
     {
+        print(player.Nickname + " Spawned");
         allPlayers.Add(player.GetComponent<Player>());
-        print(player.Nickname + " --+-+-+-+-+--+-+");
+        respawnQueue.Remove(respawnQueue.Find(p => p.name == player.Nickname));
     }
 
     private void Player_Spawned(GameObject player)
@@ -214,12 +236,39 @@ public class GameManager : MonoBehaviour
 
     public List<HealthComponent> GetTargets(HealthComponent health)
     {
-        var targets = allPlayers.Select(p => p.Health).ToList();
+        if (complete)
+            return new();
+
+        var targets = allPlayers.Where(p => p).Select(p => p.Health).ToList();
         targets.AddRange(citadels.Where(c => c).Select(c => c.Health));
         targets.AddRange(allCreeps.Select(c => c.Health));
         targets.AddRange(towers.Where(t => t).Select(t => t.Health));
 
         return targets.Where(t => t.Team != health.Team).ToList();
+    }
+
+    IEnumerator SpawnRune()
+    {
+        int delay = Random.Range(MIN_RUNE_SPAWN_DELAY, MAX_RUNE_SPAWN_DELAY);
+        yield return new WaitForSeconds(delay);
+
+        if (MultiplayerManager.IsMaster)
+        {
+            var pos = runePoints[Random.Range(0, runePoints.Length)].position;
+
+            Rune = MultiplayerManager.Spawn(runePrefab, pos);
+        }
+    }
+
+    private void Rune_Spawned(Rune rune)
+    {
+        if (Rune == null)
+            Rune = rune;
+    }
+
+    private void Rune_Ended(Player player)
+    {
+        StartCoroutine(SpawnRune());
     }
 }
 

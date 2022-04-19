@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine;
 using TMPro;
+using System;
 
 public class CompleteUI : MonoBehaviour
 {
+    [SerializeField] Button btnOk;
     [SerializeField] TMP_Text labelVictory;
     [SerializeField] PlayerComplateEntry entryPrefab;
     [SerializeField] Transform parent;
@@ -20,8 +22,10 @@ public class CompleteUI : MonoBehaviour
         print(status + " ===========================");
         Clear();
 
-        labelVictory.text = status == CompleteStatus.Victory ? "Victory" : "Defeat";
+        btnOk.onClick.AddListener(Ok_Clicked);
 
+        labelVictory.text = status == CompleteStatus.Victory ? "Victory" : "Defeat";
+        print("игроков " + GameManager.Instance.allPlayers.Count);
         foreach (var item in GameManager.Instance.allPlayers)
         {
             var entry = new PlayerEntry
@@ -34,7 +38,7 @@ public class CompleteUI : MonoBehaviour
             };
             players.Add(entry);
         }
-
+        print("респаунов " + GameManager.Instance.respawnQueue.Count);
         foreach (var item in GameManager.Instance.respawnQueue)
         {
             var entry = new PlayerEntry
@@ -56,6 +60,8 @@ public class CompleteUI : MonoBehaviour
         lineSeparate.SetSiblingIndex(5);
     }
 
+    
+
     void CreateUIEntryes(List<PlayerEntry> players, List<Perk> allPerks)
     {
         foreach (var item in players)
@@ -63,6 +69,12 @@ public class CompleteUI : MonoBehaviour
             var e = Instantiate(entryPrefab, parent);
             e.Init(item, allPerks);
         }
+    }
+
+    private void Ok_Clicked()
+    {
+        Photon.Pun.PhotonNetwork.LeaveRoom();
+        //UnityEngine.SceneManagement.SceneManager.LoadScene(0);
     }
 
     void Clear()

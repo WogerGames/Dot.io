@@ -24,7 +24,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1889667604491409664}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 3.3, z: 0}
+  m_LocalPosition: {x: 0, y: 2.05, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -93,6 +93,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8006523138590518122, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8006523138590518122, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.0654166
+      objectReference: {fileID: 0}
     - target: {fileID: -7677601350073032929, guid: a7331e3109ccb7443960010d7a2be75a,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
@@ -103,15 +113,45 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: eeaeb3ef049cb5b4a910cf844539161a, type: 2}
+    - target: {fileID: -3840613427272128088, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3840613427272128088, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.0288932
+      objectReference: {fileID: 0}
     - target: {fileID: -2630524480750688891, guid: a7331e3109ccb7443960010d7a2be75a,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: aca3ad9d846861447b1781eaa7883043, type: 2}
+    - target: {fileID: -1546141444358293751, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -1546141444358293751, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.2267542
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: a7331e3109ccb7443960010d7a2be75a,
         type: 3}
       propertyPath: m_Name
       value: Tower Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 1340551600287668715, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1340551600287668715, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.2500002
       objectReference: {fileID: 0}
     - target: {fileID: 5347710862739650784, guid: a7331e3109ccb7443960010d7a2be75a,
         type: 3}
@@ -128,6 +168,16 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: aca3ad9d846861447b1781eaa7883043, type: 2}
+    - target: {fileID: 9167343079672420789, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9167343079672420789, guid: a7331e3109ccb7443960010d7a2be75a,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.1349487
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a7331e3109ccb7443960010d7a2be75a, type: 3}
 --- !u!4 &7399980849308356700 stripped
@@ -154,7 +204,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Size: {x: 1, y: 2, z: 1}
-  m_Center: {x: 0, y: 1, z: 0}
+  m_Center: {x: 0, y: -0.5, z: 0}
 --- !u!114 &366251049805328451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,7 +246,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MaxValue: 300
-  <Team>k__BackingField: 0
+  <Evasion>k__BackingField: 0
+  <Armor>k__BackingField: 0
+  team: 0
 --- !u!114 &3327763573366275367
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -12,7 +12,6 @@ using static Settings;
 
 public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
 {
-
     [SerializeField] GameObject playerPrefab;
     [SerializeField] GameObject aiPrefab;
     [SerializeField] bool useAI;
@@ -29,9 +28,12 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
     public static MultiplayerManager Instance { get; set; }
 
     public static bool IsMaster => PhotonNetwork.IsMasterClient;
+    public static int ServerTime => PhotonNetwork.ServerTimestamp;
     public static List<Player> Players { get; } = new List<Player>();
 
     public Action<GameObject> onPlayerSpawned;
+
+    float currentGameTime = 0;
 
     private void Awake()
     {
@@ -61,15 +63,26 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
         PhotonPeer.RegisterType(typeof(EventHpContent), 012, SerializeEventHpContent, DeserializeEventHpContent);
         PhotonPeer.RegisterType(typeof(EventTurnProjectileContent), 011, SerializeEventTurnContent, DeserializeEventTurnContent);
-        PhotonPeer.RegisterType(typeof(HealthPointNetworkData), 015, SerializeHealthPoint, DeserializeEnemyHealthPoint);
         PhotonPeer.RegisterType(typeof(DirectionNetworkData), 016, SerializeDirectionNetworkData, DeserializeDirectionNetworkData);
         PhotonPeer.RegisterType(typeof(IntOwnerNetworkData), 019, SerializeWeaponPickedNetworkData, DeserializeWeaponPickedNetworkData);
         PhotonPeer.RegisterType(typeof(IntIntOwnerNetworkData), 020, SerializeIIONetworkData, DeserializeIIONetworkData);
+        PhotonPeer.RegisterType(typeof(IntIntIntOwnerNetworkData), 021, SerializeIIIONetworkData, DeserializeIIIONetworkData);
 
         //PhotonPeer.RegisterType(typeof(CreateDiceParams), 017, SerializeCreateDiceParams, DeserializeCreateDiceParams);
 
         if (networkRole)
             networkRole.text = $"{PhotonNetwork.NetworkClientState}";
+    }
+
+    private void Update()
+    {
+        currentGameTime += Time.deltaTime;
+
+        if(currentGameTime > 60 * 5)
+        {
+            PhotonNetwork.CurrentRoom.IsOpen = false;
+            PhotonNetwork.CurrentRoom.IsVisible = false;
+        }
     }
 
     public static void SpawnPlayer()
@@ -139,11 +152,20 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
         var respawns = GameManager.Instance.respawnQueue;
         if (players.Count + respawns.Count >= MAX_PLAYERS)
         {
-            var p = players.Find(p => p.Health.Team == team && p.GetComponent<BehaviourAI>());
+            var respawnData = respawns.Find(r => r.isAI && r.team == team);
+            if (respawnData != null)
+            {
+                GameManager.Instance.respawnQueue.Remove(respawnData);
+            }
+            else
+            {
+                var p = players.Find(p => p.Health.Team == team && p.GetComponent<BehaviourAI>());
 
-            p.Health.Annigilaion();
-            GameManager.Instance.respawnQueue.Remove(GameManager.Instance.respawnQueue.Last());
+                p.Health.Annigilaion();
+                GameManager.Instance.respawnQueue.Remove(GameManager.Instance.respawnQueue.Last());
+            }
         }
+
     }
 
     void SpawnAI()
@@ -194,7 +216,7 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
 
                 countAI++;
 
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(0.178f);
             }
         }
     }
@@ -458,10 +480,6 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
                     {
                         (actor as ParamMethods<Vector2>).paramMethod?.Invoke((Vector2)photonEvent.CustomData);
                     }
-                    if (data is HealthPointNetworkData)
-                    {
-                        (actor as ParamMethods<HealthPointNetworkData>).paramMethod?.Invoke((HealthPointNetworkData)photonEvent.CustomData);
-                    }
                     else if (data is DirectionNetworkData)
                     {
                         (actor as ParamMethods<DirectionNetworkData>).paramMethod?.Invoke((DirectionNetworkData)photonEvent.CustomData);
@@ -473,6 +491,10 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
                     else if (data is IntIntOwnerNetworkData)
                     {
                         (actor as ParamMethods<IntIntOwnerNetworkData>).paramMethod?.Invoke((IntIntOwnerNetworkData)photonEvent.CustomData);
+                    }
+                    else if (data is IntIntIntOwnerNetworkData)
+                    {
+                        (actor as ParamMethods<IntIntIntOwnerNetworkData>).paramMethod?.Invoke((IntIntIntOwnerNetworkData)photonEvent.CustomData);
                     }
                 }
 
@@ -522,25 +544,6 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
         return result;
     }
 
-    public static object DeserializeEnemyHealthPoint(byte[] data)
-    {
-        HealthPointNetworkData result = new HealthPointNetworkData
-        {
-            viewId = BitConverter.ToInt32(data, 0),
-            healthPoint = BitConverter.ToInt32(data, 4)
-        };
-        return result;
-    }
-
-    public static byte[] SerializeHealthPoint(object obj)
-    {
-        HealthPointNetworkData ehc = (HealthPointNetworkData)obj;
-        byte[] result = new byte[8];
-        BitConverter.GetBytes(ehc.viewId).CopyTo(result, 0);
-        BitConverter.GetBytes(ehc.healthPoint).CopyTo(result, 4);
-        return result;
-    }
-
     //public static object DeserializeCreateDiceParams(byte[] data)
     //{
     //    CreateDiceParams result = new CreateDiceParams
@@ -585,6 +588,29 @@ public class MultiplayerManager : MonoBehaviourPunCallbacks, IOnEventCallback
         BitConverter.GetBytes(data.value_1).CopyTo(result, 0);
         BitConverter.GetBytes(data.value_2).CopyTo(result, 4);
         BitConverter.GetBytes(data.viewID).CopyTo(result, 8);
+        return result;
+    }
+
+    public static object DeserializeIIIONetworkData(byte[] data)
+    {
+        IntIntIntOwnerNetworkData result = new()
+        {
+            value_1 = BitConverter.ToInt32(data, 0),
+            value_2 = BitConverter.ToInt32(data, 4),
+            value_3 = BitConverter.ToInt32(data, 8),
+            viewID  = BitConverter.ToInt32(data, 12)
+        };
+        return result;
+    }
+
+    public static byte[] SerializeIIIONetworkData(object obj)
+    {
+        var data = (IntIntIntOwnerNetworkData)obj;
+        byte[] result = new byte[16];
+        BitConverter.GetBytes(data.value_1).CopyTo(result, 0);
+        BitConverter.GetBytes(data.value_2).CopyTo(result, 4);
+        BitConverter.GetBytes(data.value_3).CopyTo(result, 8);
+        BitConverter.GetBytes(data.viewID).CopyTo(result, 12);
         return result;
     }
     #endregion
@@ -656,15 +682,22 @@ public enum EventCode
     PlayersAnniged = 2,
     PlayersAnniges = 3,
     Damage     = 6,
+    IncreaseHealth = 9,
     TeamIdx    = 10,
     Anniged    = 11,
     PerkPick   = 12,
+    RuneTaked = 15,
+    RuneEnded = 16,
     Profile    = 20,
+    RespawnPlayer  = 19,
     RespawnProfiles = 21,
     RespawnAnniges  = 22,
     RespawnAnniged  = 23,
     RespawnDataEnd  = 29,
-    RespawnPerk     = 27
+    RespawnPerk     = 27,
+    RespawnTeam     = 26,
+    ClientCompleteData   = 25,
+ 
 }
 
 public class EventAction

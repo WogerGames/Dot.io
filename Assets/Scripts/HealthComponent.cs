@@ -95,13 +95,12 @@ public class HealthComponent : MonoBehaviour
 
             AnnigedTime = MultiplayerManager.ServerTime;
 
-
             StartCoroutine(WaitClientAnnigedData());
 
             IEnumerator WaitClientAnnigedData()
             {
                 // ¬ сетевом представлении этого класса есть метод
-                // который получает инфу об аннигил€ции и сравненивает
+                // который получает инфу об аннигил€ции и сравнивает
                 // серверное врем€ этого событи€
                 yield return new WaitForSeconds(0.3f);
 

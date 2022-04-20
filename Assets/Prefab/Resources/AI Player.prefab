@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4491227087223911794}
   - component: {fileID: 7943285202328073010}
   m_Layer: 0
-  m_Name: Particle System (1)
+  m_Name: Rune Effect
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5037,6 +5037,10 @@ MonoBehaviour:
   health: {fileID: 2898810729225674098}
   testo: {fileID: 3812974872461302833}
   runeEffect: {fileID: 4491227087223911794}
+  fireEffectFriendlyPrefab: {fileID: 326217812831262180, guid: 3e30f17ff1593f247b5dba8dba2c0142,
+    type: 3}
+  fireEffectEnemyPrefab: {fileID: 326217812831262180, guid: fd5ad2fcabe226948909ffb3c2e38675,
+    type: 3}
   teamIndicator: {fileID: 3668232002509446355}
   friendly: {fileID: 2100000, guid: bdbd7b4e3d093aa44bb7c595beb37b74, type: 2}
   enemy: {fileID: 2100000, guid: eae234eb3ce84f346b8f63c13fb07f32, type: 2}

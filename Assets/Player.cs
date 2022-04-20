@@ -15,6 +15,8 @@ public class Player : MonoBehaviourPun
     [SerializeField] HealthComponent health;
     [SerializeField] TMPro.TMP_Text testo;
     [SerializeField] ParticleSystem runeEffect;
+    [SerializeField] GameObject fireEffectFriendlyPrefab;
+    [SerializeField] GameObject fireEffectEnemyPrefab;
 
     [Space]
 
@@ -244,10 +246,14 @@ public class Player : MonoBehaviourPun
                 critChance = CritChance,
                 ownerID = photonView.ViewID,
                 team = Health.Team,
+                mat = GameManager.Instance.MineTeam == health.Team ? friendly : enemy,
             };
             go.GetComponent<Projectile>().Init(projectileData);
             currentRate = 0;
-            
+
+            var prefab = GameManager.Instance.MineTeam == health.Team ? fireEffectFriendlyPrefab : fireEffectEnemyPrefab;
+            var effect = Instantiate(prefab, transform);
+            effect.transform.forward = dir;
         }
         else
         {

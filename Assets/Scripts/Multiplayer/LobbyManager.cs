@@ -69,6 +69,9 @@ public class LobbyManager : MonoBehaviourPunCallbacks
             btnConnect.gameObject.SetActive(true);
         }
 
+        var ebat = FindObjectOfType<Advertising>();
+        ebat.onVideoClosed += () => PhotonNetwork.ConnectUsingSettings();
+
         PhotonNetwork.KeepAliveInBackground = 180;
     }
 

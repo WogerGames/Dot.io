@@ -9,6 +9,13 @@ public class Projectile : MonoBehaviourPun
     [SerializeField] LayerMask collisionMask;
     [SerializeField] float speed = 15f;
 
+    [Space]
+
+    [SerializeField] Color friendly;
+    [SerializeField] Color enemy;
+
+    MeshRenderer mesh;
+
     public int OwnerId { get; set; }
 
     [field: SerializeField]
@@ -22,6 +29,8 @@ public class Projectile : MonoBehaviourPun
 
     public void Init(ProjectileData data)
     {
+        mesh = GetComponent<MeshRenderer>();
+
         prevPoint = transform.position;
         curPoint = transform.position;
 
@@ -31,6 +40,17 @@ public class Projectile : MonoBehaviourPun
         moveDir = data.direction;
         OwnerId = data.ownerID;
         Team = data.team;
+
+        if (data.mat)
+        {
+            mesh.material = data.mat;
+        }
+
+        foreach (var item in GetComponentsInChildren<ParticleSystem>())
+        {
+            var main = item.main;
+            main.startColor = GameManager.Instance.MineTeam == Team ? friendly : enemy;
+        }
     }
 
     private void Update()
@@ -100,4 +120,5 @@ public class ProjectileData
     public int critChance = 5;
     public int ownerID;
     public Team team;
+    public Material mat;
 }

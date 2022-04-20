@@ -74,6 +74,8 @@ public class CompleteUI : MonoBehaviour
     private void Ok_Clicked()
     {
         Photon.Pun.PhotonNetwork.LeaveRoom();
+
+        Advertising.ShowVideoAd();
         //UnityEngine.SceneManagement.SceneManager.LoadScene(0);
     }
 

@@ -8,7 +8,7 @@ public class Advertising : MonoBehaviour, IRewardedVideoAdListener
 {
     public System.Action onVideoClosed;
 
-    public static int countGameSession = 0;
+    public static int countGameSession = 1;
 
     private void Start()
     {
@@ -25,13 +25,17 @@ public class Advertising : MonoBehaviour, IRewardedVideoAdListener
             if (Appodeal.isLoaded(Appodeal.REWARDED_VIDEO))
             {
                 Appodeal.show(Appodeal.REWARDED_VIDEO);
-            }else if (Appodeal.isLoaded(Appodeal.INTERSTITIAL))
+                countGameSession = 1;
+            }
+            else if (Appodeal.isLoaded(Appodeal.INTERSTITIAL))
             {
                 Appodeal.show(Appodeal.INTERSTITIAL);
+                countGameSession = 1;
             }
+
             Appodeal.cache(Appodeal.REWARDED_VIDEO);
 
-            countGameSession = 1;
+            
         }
     }
 
